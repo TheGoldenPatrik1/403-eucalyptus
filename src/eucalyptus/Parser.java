@@ -15,8 +15,14 @@ public class Parser {
     public List<FunctionCall> parse() throws Exception {
         Queue<String> tokens = tokenize(this.input);
         List<FunctionCall> functions = new ArrayList<>();
-        while (!tokens.isEmpty()) {
-            functions.add(parseLine(tokens));
+        int lineNumber = 1;
+        try {
+            while (!tokens.isEmpty()) {
+                functions.add(parseLine(tokens));
+                lineNumber++;
+            }
+        } catch (Exception e) {
+            throw new Exception("ParseError on line " + lineNumber + ": " + e.getMessage());
         }
         return functions;
     }
@@ -95,20 +101,30 @@ public class Parser {
             throw new Exception("Expected '(', but got " + (token == null ? "nothing" : "'" + token + "'"));
         }
 
+        boolean trailingComma = false;
         while (!tokens.isEmpty()) {
             if (tokens.peek().equals(")")) {
+                if (trailingComma) {
+                    throw new Exception("Trailing comma in function call");
+                }
                 break;
             }
+            trailingComma = false;
             Object parameter = parseStatement(tokens);
             parameters.add(parameter);
             if (tokens.peek().equals(",")) {
                 tokens.poll(); // consume ','
+                trailingComma = true;
             }
         }
 
         token = tokens.poll();
         if (token == null || !token.equals(")")) {
             throw new Exception("Expected ')', but got " + (token == null ? "nothing" : "'" + token + "'"));
+        }
+
+        if (trailingComma) {
+            throw new Exception("Trailing comma in function call");
         }
 
         token = tokens.poll();
@@ -128,15 +144,24 @@ public class Parser {
         if (token.equals("[")) {
             // parse list
             List<Object> list = new ArrayList<>();
+            boolean trailingComma = false;
             while (!tokens.isEmpty()) {
                 if (tokens.peek().equals("]")) {
+                    if (trailingComma) {
+                        throw new Exception("Trailing comma in list");
+                    }
                     tokens.poll();
                     return new Literal(list);
                 }
+                trailingComma = false;
                 list.add(parseStatement(tokens));
                 if (tokens.peek().equals(",")) {
                     tokens.poll(); // consume ','
+                    trailingComma = true;
                 }
+            }
+            if (trailingComma) {
+                throw new Exception("Trailing comma in list");
             }
             return new Literal(list);
         } else if (token.startsWith("\"") && token.endsWith("\"") && token.length() > 1) {
@@ -149,12 +174,24 @@ public class Parser {
                 // function call
                 List<Object> arguments = new ArrayList<>();
                 tokens.poll(); // consume '('
+                boolean trailingComma = false;
                 while (!tokens.isEmpty()) {
                     if (tokens.peek().equals(")")) {
+                        if (trailingComma) {
+                            throw new Exception("Trailing comma in function call");
+                        }
                         tokens.poll();
                         return new FunctionCall(token, arguments);
                     }
+                    trailingComma = false;
                     arguments.add(parseStatement(tokens));
+                    if (tokens.peek().equals(",")) {
+                        tokens.poll(); // consume ','
+                        trailingComma = true;
+                    }
+                }
+                if (trailingComma) {
+                    throw new Exception("Trailing comma in function call");
                 }
                 return new FunctionCall(token, arguments);
             } else {
