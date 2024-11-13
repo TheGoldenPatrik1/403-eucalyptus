@@ -8,7 +8,7 @@ import java.util.regex.Pattern;
 
 public class Interpreter {
     List<FunctionCall> functions;
-    Map<String, Object> environment = new HashMap<>();
+    Environment env = new Environment();
     String currentFunction;
 
     public Interpreter(List<FunctionCall> functions) {
@@ -19,7 +19,7 @@ public class Interpreter {
         int lineNumber = 1;
         try {
             for (FunctionCall function : functions) {
-                acceptFunction(function, environment);
+                acceptFunction(function);
                 lineNumber++;
             }
         } catch (Exception e) {
@@ -31,29 +31,31 @@ public class Interpreter {
         }
     }
 
-    private Object acceptFunction(FunctionCall function, Map<String, Object> localEnvironment) {
+    private Object acceptFunction(FunctionCall function) {
         String name = function.getName();
         // alphabetized list of built-in functions
         switch (name) {
             case "def":
-                return visitDef(function, localEnvironment);
+                return visitDef(function);
             case "defFunction":
-                return visitDefFunction(function, localEnvironment);
+                return visitDefFunction(function);
             case "print":
-                return visitPrint(function, localEnvironment);
+                return visitPrint(function);
+            case "return":
+                return visitReturn(function);
             default:
-                return visitUserFunction(function, localEnvironment);
+                return visitUserFunction(function);
         }
     }
 
-    private Object acceptStatement(Object statement, Map<String, Object> localEnvironment) {
+    private Object acceptStatement(Object statement) {
         if (statement instanceof FunctionCall) {
-            return acceptFunction((FunctionCall) statement, localEnvironment);
+            return acceptFunction((FunctionCall) statement);
         } else if (statement instanceof Literal) {
             return ((Literal) statement).getValue();
         } else if (statement instanceof Variable) {
             String name = ((Variable) statement).getName();
-            Object value = localEnvironment.get(name);
+            Object value = env.getVariable(name);
             if (value == null) {
                 throw new RuntimeException("Variable '" + name + "' is not defined");
             }
@@ -62,7 +64,7 @@ public class Interpreter {
         throw new RuntimeException("Unknown statement: " + statement);
     }
 
-    private Object visitDef(FunctionCall function, Map<String, Object> localEnvironment) {
+    private Object visitDef(FunctionCall function) {
         List<Object> arguments = function.getArguments();
         if (arguments.size() != 2) {
             throw new RuntimeException("'def' function expects 2 arguments, got " + arguments.size());
@@ -72,21 +74,21 @@ public class Interpreter {
         }
 
         String variableName = ((Variable) arguments.get(0)).getName();
-        if (isScreamingSnakeCase(variableName) && localEnvironment.containsKey(variableName)) {
+        if (isScreamingSnakeCase(variableName) && env.hasVariable(variableName)) {
             throw new RuntimeException("Cannot reassign constant variable '" + variableName + "'");
         }
 
         if (!isScreamingSnakeCase(variableName) && !isSnakeCase(variableName)) {
             throw new RuntimeException("Variable name must be in snake_case if mutable or SCREAMING_SNAKE_CASE if constant");
         }
-        Object value = acceptStatement(arguments.get(1), localEnvironment);
-        localEnvironment.put(variableName, value);
+        Object value = acceptStatement(arguments.get(1));
+        env.setVariable(variableName, value);
 
         return null;
     }
 
     @SuppressWarnings("unchecked")
-    private Object visitDefFunction(FunctionCall function, Map<String, Object> localEnvironment) {
+    private Object visitDefFunction(FunctionCall function) {
         List<Object> arguments = function.getArguments();
         if (arguments.size() != 3) {
             throw new RuntimeException("'defFunction' function expects 3 arguments, got " + arguments.size());
@@ -119,26 +121,34 @@ public class Interpreter {
         }
 
         Function userFunction = new Function(functionName, parameters, statements);
-        localEnvironment.put(functionName, userFunction);
+        env.setVariable(functionName, userFunction);
 
         return null;
     }
 
-    private Object visitPrint(FunctionCall function, Map<String, Object> localEnvironment) {
+    private Object visitPrint(FunctionCall function) {
         List<Object> arguments = function.getArguments();
         if (arguments.isEmpty()) {
             throw new RuntimeException("'print' function expects at least 1 argument, got " + arguments.size());
         }
         for (Object argument : arguments) {
-            Object value = acceptStatement(argument, localEnvironment);
+            Object value = acceptStatement(argument);
             System.out.println(value);
         }
         return null;
     }
 
-    private Object visitUserFunction(FunctionCall function, Map<String, Object> localEnvironment) {
+    private Object visitReturn(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+        if (arguments.size() != 1) {
+            throw new RuntimeException("'return' function expects 1 argument, got " + arguments.size());
+        }
+        return acceptStatement(arguments.get(0));
+    }
+
+    private Object visitUserFunction(FunctionCall function) {
         String name = function.getName();
-        Object functionValue = localEnvironment.get(name);
+        Object functionValue = env.getVariable(name);
         if (functionValue == null) {
             throw new RuntimeException("Function '" + name + "' is not defined");
         } else if (!(functionValue instanceof Function)) {
@@ -154,20 +164,27 @@ public class Interpreter {
             throw new RuntimeException("Function '" + userFunction.getName() + "' expects " + parameters.size() + " parameters, but got " + arguments.size());
         }
 
-        Map<String, Object> newLocalEnvironment = new HashMap<>(localEnvironment);
+        env.enterScope();
+
         for (int i = 0; i < parameters.size(); i++) {
             Variable parameter = parameters.get(i);
             Object argument = arguments.get(i);
-            Object parameterValue = acceptStatement(argument, localEnvironment);
-            newLocalEnvironment.put(parameter.getName(), parameterValue);
+            Object parameterValue = acceptStatement(argument);
+            env.setVariable(parameter.getName(), parameterValue);
         }
 
         currentFunction = name;
         for (FunctionCall statement : statements) {
-            acceptFunction(statement, newLocalEnvironment);
+            Object value = acceptFunction(statement);
+            if (value != null) {
+                env.exitScope();
+                currentFunction = null;
+                return value;
+            }
         }
         currentFunction = null;
 
+        env.exitScope();
         return null;
     }
 

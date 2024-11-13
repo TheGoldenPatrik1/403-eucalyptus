@@ -1,0 +1,2 @@
+defFunction(testEarlyReturn, [], [print(1), return(false), print(2)])
+testEarlyReturn()

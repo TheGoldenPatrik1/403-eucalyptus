@@ -72,8 +72,6 @@ public class Parser {
                 if (token.length() > 0) {
                     tokens.add(token.toString());
                     token.setLength(0);
-                } else if (c == '\n') {
-                    tokens.add(String.valueOf(c)); // Explicit newline token
                 }
             } else {
                 token.append(c); // Build function name
@@ -125,11 +123,6 @@ public class Parser {
 
         if (trailingComma) {
             throw new Exception("Trailing comma in function call");
-        }
-
-        token = tokens.poll();
-        if (token != null && !token.equals("\n")) {
-            throw new Exception("Expected '\\n', but got '" + token + "'");
         }
 
         return new FunctionCall(name, parameters);

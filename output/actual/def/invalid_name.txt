@@ -1,0 +1,1 @@
+Error on line 3: Variable name must be in snake_case if mutable or SCREAMING_SNAKE_CASE if constant

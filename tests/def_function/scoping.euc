@@ -1,0 +1,8 @@
+def(x, 1)
+defFunction(testScoping, [], [
+    def(x, 2),
+    print(x)
+])
+print(x)
+testScoping()
+print(x)

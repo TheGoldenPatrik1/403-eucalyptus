@@ -1,0 +1,5 @@
+defFunction(defineAndCallAnotherFunction, x, [
+    defFunction(anotherFunction, x, print(x)),
+    anotherFunction(x)
+])
+defineAndCallAnotherFunction(1)

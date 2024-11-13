@@ -1,0 +1,6 @@
+def(mutable_variable, 0)
+defFunction(printMutable, [], print(mutable_variable))
+def(mutable_variable, 1)
+printMutable()
+def(mutable_variable, 2)
+printMutable()

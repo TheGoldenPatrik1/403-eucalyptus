@@ -1,0 +1,2 @@
+defFunction(testFunction, [], [])
+testFunction(1)

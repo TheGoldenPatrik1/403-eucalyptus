@@ -1,0 +1,4 @@
+defFunction(testNestedReturn, y, return(y))
+defFunction(testReturn, x, testNestedReturn(x))
+defFunction(testPrint, x, print(x))
+testPrint(testReturn(1))

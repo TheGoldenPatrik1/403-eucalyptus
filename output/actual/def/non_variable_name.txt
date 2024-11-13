@@ -1,0 +1,1 @@
+Error on line 1: First argument of 'def' function must be a variable

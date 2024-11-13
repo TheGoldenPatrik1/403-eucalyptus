@@ -1,0 +1,4 @@
+def(CONSTANT_VARIABLE, 0)
+defFunction(printConstant, [], print(CONSTANT_VARIABLE))
+printConstant()
+def(CONSTANT_VARIABLE, 1)

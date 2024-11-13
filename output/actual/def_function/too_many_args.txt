@@ -1,0 +1,1 @@
+Error on line 2: Function 'testFunction' expects 0 parameters, but got 1

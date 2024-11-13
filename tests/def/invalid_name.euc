@@ -1,0 +1,3 @@
+def(snake_case, 1)
+def(SCREAMING_SNAKE_CASE, 1)
+def(camelCase, 1)

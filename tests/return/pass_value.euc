@@ -1,0 +1,2 @@
+defFunction(returnValue, x, return(x))
+print(returnValue(1))
