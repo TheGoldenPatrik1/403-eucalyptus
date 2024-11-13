@@ -48,10 +48,10 @@ public class Eucalyptus {
 
     private static void run(String input) {
         try {
-            // Parser parser = new Parser(input);
-            // List<SExpr> statements = parser.parse();
-            // Interpreter interpreter = new Interpreter(statements);
-            // interpreter.interpret();
+            Parser parser = new Parser(input);
+            List<FunctionCall> functions = parser.parse();
+            Interpreter interpreter = new Interpreter(functions);
+            interpreter.interpret();
         } catch (Exception e) {
             System.out.println("Error: " + e.getMessage());
         }
