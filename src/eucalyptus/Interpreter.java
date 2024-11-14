@@ -1,18 +1,33 @@
 package eucalyptus;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.io.IOException;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.regex.Pattern;
 
 public class Interpreter {
     List<FunctionCall> functions;
     Environment env = new Environment();
     String currentFunction;
+    Set<String> reservedFunctions;
 
     public Interpreter(List<FunctionCall> functions) {
         this.functions = functions;
+
+        Path filePath = Paths.get("../src/reserved_functions.txt");
+        try {
+            List<String> reservedFunctionList = Files.readAllLines(filePath);
+            reservedFunctions = new HashSet<>(reservedFunctionList);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void interpret() throws Exception {
@@ -34,11 +49,16 @@ public class Interpreter {
     private Object acceptFunction(FunctionCall function) {
         String name = function.getName();
         // alphabetized list of built-in functions
+        // each built-in function should also be listed in reserved_functions.txt
         switch (name) {
+            case "add":
+                return visitAdd(function);
             case "def":
                 return visitDef(function);
             case "defFunction":
                 return visitDefFunction(function);
+            case "forEach":
+                return visitForEach(function);
             case "print":
                 return visitPrint(function);
             case "return":
@@ -48,11 +68,24 @@ public class Interpreter {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Object acceptStatement(Object statement) {
         if (statement instanceof FunctionCall) {
             return acceptFunction((FunctionCall) statement);
         } else if (statement instanceof Literal) {
-            return ((Literal) statement).getValue();
+            Literal literalStatement = (Literal) statement;
+            if (literalStatement.isList()) {
+                List<Object> list = new ArrayList<>();
+                for (Object item : (List<Object>) literalStatement.getValue()) {
+                    Object value = acceptStatement(item);
+                    if (value != null) {
+                        list.add(value);
+                    }
+                }
+                return list;
+            } else {
+                return literalStatement.getValue();
+            }
         } else if (statement instanceof Variable) {
             String name = ((Variable) statement).getName();
             Object value = env.getVariable(name);
@@ -62,6 +95,39 @@ public class Interpreter {
             return value;
         }
         throw new RuntimeException("Unknown statement: " + statement);
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object visitAdd(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() < 2) {
+            throw new RuntimeException("'add' function expects at least 2 arguments, got " + arguments.size());
+        }
+
+        Object result = acceptStatement(arguments.get(0));
+
+        for (int i = 1; i < arguments.size(); i++) {
+            Object next = acceptStatement(arguments.get(i));
+
+            if (result instanceof Integer && next instanceof Integer) {
+                result = (int) result + (int) next;
+            } else if (result instanceof Number && next instanceof Number) {
+                result = ((Number) result).doubleValue() + ((Number) next).doubleValue();
+            } else if (result instanceof String && next instanceof String) {
+                result = (String) result + (String) next;
+            } else if (result instanceof List && next instanceof List) {
+                List<Object> newResult = new ArrayList<>((List<Object>) result);
+                newResult.addAll((List<Object>) next);
+                result = newResult;
+            } else {
+                String resultName = result.getClass().getSimpleName().replace("ArrayList", "List");
+                String nextName = next.getClass().getSimpleName().replace("ArrayList", "List");
+                throw new RuntimeException("Cannot add " + resultName + " and " + nextName);
+            }
+        }
+
+        return result;
     }
 
     private Object visitDef(FunctionCall function) {
@@ -74,13 +140,16 @@ public class Interpreter {
         }
 
         String variableName = ((Variable) arguments.get(0)).getName();
+        if (reservedFunctions.contains(variableName)) {
+            throw new RuntimeException("Cannot define variable with reserved name '" + variableName + "'");
+        }
         if (isScreamingSnakeCase(variableName) && env.hasVariable(variableName)) {
             throw new RuntimeException("Cannot reassign constant variable '" + variableName + "'");
         }
-
         if (!isScreamingSnakeCase(variableName) && !isSnakeCase(variableName)) {
             throw new RuntimeException("Variable name must be in snake_case if mutable or SCREAMING_SNAKE_CASE if constant");
         }
+
         Object value = acceptStatement(arguments.get(1));
         env.setVariable(variableName, value);
 
@@ -98,6 +167,9 @@ public class Interpreter {
         }
 
         String functionName = ((Variable) arguments.get(0)).getName();
+        if (reservedFunctions.contains(functionName)) {
+            throw new RuntimeException("Cannot define function with reserved name '" + functionName + "'");
+        }
         if (!isCamelCase(functionName)) {
             throw new RuntimeException("Function name must be in camelCase");
         }
@@ -111,17 +183,67 @@ public class Interpreter {
             throw new RuntimeException("Second argument of 'defFunction' function must be a variable or list of variables");
         }
 
-        List<FunctionCall> statements;
-        if (arguments.get(2) instanceof Literal && ((Literal) arguments.get(2)).isList()) {
-            statements = (List<FunctionCall>) ((Literal) arguments.get(2)).getValue();
-        } else if (arguments.get(2) instanceof FunctionCall) {
-            statements = List.of((FunctionCall) arguments.get(2));
-        } else {
-            throw new RuntimeException("Third argument of 'defFunction' function must be a function call or list of function calls");
-        }
+        List<FunctionCall> statements = extractFunctionCalls(arguments.get(2), "Third", "defFunction");
 
         Function userFunction = new Function(functionName, parameters, statements);
         env.setVariable(functionName, userFunction);
+
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object visitForEach(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+        if (arguments.size() != 3) {
+            throw new RuntimeException("'forEach' function expects 3 arguments, got " + arguments.size());
+        }
+        if (!(arguments.get(0) instanceof Variable)) {
+            throw new RuntimeException("First argument of 'forEach' function must be a variable");
+        }
+
+        final String LIST_ERROR_MESSAGE = "Second argument of 'forEach' function must be a list";
+        Object value = null;
+        if (arguments.get(1) instanceof Literal) {
+            Literal listLiteral = (Literal) arguments.get(1);
+            if (!listLiteral.isList()) {
+                throw new RuntimeException(LIST_ERROR_MESSAGE);
+            }
+            value = acceptStatement(listLiteral);
+        } else if (arguments.get(1) instanceof Variable) {
+            String variableName = ((Variable) arguments.get(1)).getName();
+            value = env.getVariable(variableName);
+            if (value == null) {
+                throw new RuntimeException("Variable '" + variableName + "' is not defined");
+            }
+            if (!(value instanceof List)) {
+                throw new RuntimeException(LIST_ERROR_MESSAGE);
+            }
+        } else {
+            throw new RuntimeException(LIST_ERROR_MESSAGE);
+        }
+
+        List<FunctionCall> statements = extractFunctionCalls(arguments.get(2), "Third", "forEach");
+
+        String variableName = ((Variable) arguments.get(0)).getName();
+        if (reservedFunctions.contains(variableName)) {
+            throw new RuntimeException("Cannot define variable with reserved name '" + variableName + "'");
+        }
+        if (!isSnakeCase(variableName)) {
+            throw new RuntimeException("Variable name must be in snake_case");
+        }
+
+        env.enterScope();
+        for (Object item : (List<Object>) value) {
+            env.setVariable(variableName, item);
+            for (FunctionCall statement : statements) {
+                Object result = acceptFunction(statement);
+                if (result != null) {
+                    env.exitScope();
+                    return result;
+                }
+            }
+        }
+        env.exitScope();
 
         return null;
     }
@@ -133,7 +255,9 @@ public class Interpreter {
         }
         for (Object argument : arguments) {
             Object value = acceptStatement(argument);
-            System.out.println(value);
+            if (value != null) {
+                System.out.println(value);
+            }
         }
         return null;
     }
@@ -188,17 +312,31 @@ public class Interpreter {
         return null;
     }
 
-    public static boolean isCamelCase(String input) {
+    @SuppressWarnings("unchecked")
+    private List<FunctionCall> extractFunctionCalls(Object arg, String argNumber, String functionName) {
+        List<FunctionCall> functionCalls;
+        final String ERROR_MESSAGE = argNumber + " argument of '" + functionName + "' function must be a list of function calls";
+        if (arg instanceof Literal && ((Literal) arg).isList()) {
+            functionCalls = (List<FunctionCall>) ((Literal) arg).getValue();
+        } else if (arg instanceof FunctionCall) {
+            functionCalls = List.of((FunctionCall) arg);
+        } else {
+            throw new RuntimeException(ERROR_MESSAGE);
+        }
+        return functionCalls;
+    }
+
+    private static boolean isCamelCase(String input) {
         String camelCasePattern = "^[a-z][a-z0-9]*([A-Z][a-z0-9]*)*$";
         return Pattern.matches(camelCasePattern, input);
     }
 
-    public static boolean isScreamingSnakeCase(String input) {
+    private static boolean isScreamingSnakeCase(String input) {
         String screamingSnakeCasePattern = "^[A-Z][A-Z0-9]*(_[A-Z][A-Z0-9]*)*$";
         return Pattern.matches(screamingSnakeCasePattern, input);
     }
 
-    public static boolean isSnakeCase(String input) {
+    private static boolean isSnakeCase(String input) {
         String snakeCasePattern = "^[a-z][a-z0-9]*(_[a-z][a-z0-9]*)*$";
         return Pattern.matches(snakeCasePattern, input);
     }

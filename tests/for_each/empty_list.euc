@@ -1,0 +1,2 @@
+print("Expecting an otherwise empty output file...")
+forEach(x, [], print(x))

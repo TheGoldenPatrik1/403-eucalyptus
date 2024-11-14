@@ -1,0 +1,1 @@
+forEach(x, [return(1), 2, 3], [print(x), return(x)])

@@ -1,0 +1,6 @@
+add
+def
+defFunction
+forEach
+print
+return
