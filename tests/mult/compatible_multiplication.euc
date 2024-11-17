@@ -1,0 +1,2 @@
+print(mult(1, 2, 3))
+print(mult(1, 0.5, 2, -1))

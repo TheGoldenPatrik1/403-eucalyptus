@@ -41,7 +41,8 @@ public class Interpreter {
             if (currentFunction == null) {
                 throw new Exception("Error on line " + lineNumber + ": " + e.getMessage());
             } else {
-                throw new Exception("Error on line " + lineNumber + " while executing function '" + currentFunction + "': " + e.getMessage());
+                throw new Exception("Error on line " + lineNumber + " while executing function '" + currentFunction
+                        + "': " + e.getMessage());
             }
         }
     }
@@ -59,6 +60,8 @@ public class Interpreter {
                 return visitDefFunction(function);
             case "forEach":
                 return visitForEach(function);
+            case "mult":
+                return visitMult(function);
             case "print":
                 return visitPrint(function);
             case "return":
@@ -147,7 +150,8 @@ public class Interpreter {
             throw new RuntimeException("Cannot reassign constant variable '" + variableName + "'");
         }
         if (!isScreamingSnakeCase(variableName) && !isSnakeCase(variableName)) {
-            throw new RuntimeException("Variable name must be in snake_case if mutable or SCREAMING_SNAKE_CASE if constant");
+            throw new RuntimeException(
+                    "Variable name must be in snake_case if mutable or SCREAMING_SNAKE_CASE if constant");
         }
 
         Object value = acceptStatement(arguments.get(1));
@@ -173,14 +177,15 @@ public class Interpreter {
         if (!isCamelCase(functionName)) {
             throw new RuntimeException("Function name must be in camelCase");
         }
-        
+
         List<Variable> parameters;
         if (arguments.get(1) instanceof Literal && ((Literal) arguments.get(1)).isList()) {
             parameters = (List<Variable>) ((Literal) arguments.get(1)).getValue();
         } else if (arguments.get(1) instanceof Variable) {
             parameters = List.of((Variable) arguments.get(1));
         } else {
-            throw new RuntimeException("Second argument of 'defFunction' function must be a variable or list of variables");
+            throw new RuntimeException(
+                    "Second argument of 'defFunction' function must be a variable or list of variables");
         }
 
         List<FunctionCall> statements = extractFunctionCalls(arguments.get(2), "Third", "defFunction");
@@ -248,6 +253,33 @@ public class Interpreter {
         return null;
     }
 
+    private Object visitMult(FunctionCall function) {
+
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() < 2) {
+            throw new RuntimeException("'add' function expects at least 2 arguments, got " + arguments.size());
+        }
+
+        Object result = acceptStatement(arguments.get(0));
+
+        for (int i = 1; i < arguments.size(); i++) {
+            Object next = acceptStatement(arguments.get(i));
+
+            if (result instanceof Integer && next instanceof Integer) {
+                result = (int) result * (int) next;
+            } else if (result instanceof Number && next instanceof Number) {
+                result = ((Number) result).doubleValue() * ((Number) next).doubleValue();
+            } else {
+                String resultName = result.getClass().getSimpleName().replace("ArrayList", "List");
+                String nextName = next.getClass().getSimpleName().replace("ArrayList", "List");
+                throw new RuntimeException("Cannot multiply " + resultName + " and " + nextName);
+            }
+        }
+
+        return result;
+    }
+
     private Object visitPrint(FunctionCall function) {
         List<Object> arguments = function.getArguments();
         if (arguments.isEmpty()) {
@@ -285,7 +317,8 @@ public class Interpreter {
         List<Object> arguments = function.getArguments();
 
         if (parameters.size() != arguments.size()) {
-            throw new RuntimeException("Function '" + userFunction.getName() + "' expects " + parameters.size() + " parameters, but got " + arguments.size());
+            throw new RuntimeException("Function '" + userFunction.getName() + "' expects " + parameters.size()
+                    + " parameters, but got " + arguments.size());
         }
 
         env.enterScope();
@@ -315,7 +348,8 @@ public class Interpreter {
     @SuppressWarnings("unchecked")
     private List<FunctionCall> extractFunctionCalls(Object arg, String argNumber, String functionName) {
         List<FunctionCall> functionCalls;
-        final String ERROR_MESSAGE = argNumber + " argument of '" + functionName + "' function must be a list of function calls";
+        final String ERROR_MESSAGE = argNumber + " argument of '" + functionName
+                + "' function must be a list of function calls";
         if (arg instanceof Literal && ((Literal) arg).isList()) {
             functionCalls = (List<FunctionCall>) ((Literal) arg).getValue();
         } else if (arg instanceof FunctionCall) {
