@@ -58,8 +58,14 @@ public class Interpreter {
                 return visitDef(function);
             case "defFunction":
                 return visitDefFunction(function);
+            case "eq":
+                return visitEqFunction(function);
             case "forEach":
                 return visitForEach(function);
+            case "if":
+                return visitIf(function);
+            case "lt":
+                return visitLess(function);
             case "mult":
                 return visitMult(function);
             case "print":
@@ -196,6 +202,20 @@ public class Interpreter {
         return null;
     }
 
+    private Object visitEqFunction(FunctionCall function) {
+
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() != 2) {
+            throw new RuntimeException("'eq' function expects exactly 2 arguments, got " + arguments.size());
+        }
+
+        Object first = acceptStatement(arguments.get(0));
+        Object second = acceptStatement(arguments.get(1));
+
+        return first.equals(second);
+    }
+
     @SuppressWarnings("unchecked")
     private Object visitForEach(FunctionCall function) {
         List<Object> arguments = function.getArguments();
@@ -253,12 +273,40 @@ public class Interpreter {
         return null;
     }
 
+    private Object visitIf(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() != 3) {
+            throw new RuntimeException("'if' function expects exactly 3 arguments, got " + arguments.size());
+        }
+
+        Object conditional = acceptStatement(arguments.get(0));
+
+        if ((Boolean) conditional) {
+            return acceptStatement(arguments.get(1));
+        }
+        return acceptStatement(arguments.get(2));
+    }
+
+    private Object visitLess(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() != 2) {
+            throw new RuntimeException("'eq' function expects exactly 2 arguments, got " + arguments.size());
+        }
+
+        Object first = acceptStatement(arguments.get(0));
+        Object second = acceptStatement(arguments.get(1));
+
+        return first.toString().compareTo(second.toString()) < 0;
+    }
+
     private Object visitMult(FunctionCall function) {
 
         List<Object> arguments = function.getArguments();
 
         if (arguments.size() < 2) {
-            throw new RuntimeException("'add' function expects at least 2 arguments, got " + arguments.size());
+            throw new RuntimeException("'mult' function expects at least 2 arguments, got " + arguments.size());
         }
 
         Object result = acceptStatement(arguments.get(0));

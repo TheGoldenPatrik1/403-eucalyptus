@@ -1,0 +1,3 @@
+print(lt("a","b"))
+print(lt("word", "wor"))
+print(lt("same", "same"))
