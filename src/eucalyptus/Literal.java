@@ -1,6 +1,7 @@
 package eucalyptus;
 
 import java.util.List;
+import java.util.Map;
 
 public class Literal {
     private Object value;
@@ -18,6 +19,9 @@ public class Literal {
     }
 
     public String getType() {
+        if (isDict()) {
+            return "Dict";
+        }
         if (isList()) {
             return "List";
         }
@@ -38,5 +42,9 @@ public class Literal {
 
     public boolean isList() {
         return value instanceof List;
+    }
+
+    public boolean isDict() {
+        return value instanceof Map;
     }
 }

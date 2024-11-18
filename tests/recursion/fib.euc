@@ -1,0 +1,11 @@
+defFunction(fib, n, if(
+    lt(n, 2),
+    return(n),
+    return(
+        add(
+            fib(sub(n, 1)),
+            fib(sub(n, 2))
+        )
+    )
+))
+print(fib(8))

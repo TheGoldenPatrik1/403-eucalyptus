@@ -4,9 +4,14 @@ import java.util.LinkedList;
 import java.util.Queue;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
 
 public class Parser {
     private String input;
+    private static final String TRAILING_COMMA_IN_FUNCTION = "Trailing comma in function call";
+    private static final String TRAILING_COMMA_IN_LIST = "Trailing comma in list";
+    private static final String TRAILING_COMMA_IN_DICT = "Trailing comma in dict";
 
     public Parser(String input) {
         this.input = input;
@@ -31,18 +36,25 @@ public class Parser {
         Queue<String> tokens = new LinkedList<>();
         StringBuilder token = new StringBuilder();
         boolean inString = false;
+        char quote = 0;
 
         for (int i = 0; i < input.length(); i++) {
             char c = input.charAt(i);
 
             // Handle string literals
-            if (c == '"') {
+            if (c == '"' || c == '\'') {
                 if (inString) {
-                    // End of string
-                    token.append(c);
-                    tokens.add(token.toString());
-                    token.setLength(0);
-                    inString = false;
+                    if (c == quote) {
+                        // End of string
+                        token.append(c);
+                        tokens.add(token.toString());
+                        token.setLength(0);
+                        inString = false;
+                        quote = 0;
+                    } else {
+                        // Escaped quote
+                        token.append(c);
+                    }
                 } else {
                     // Start of string
                     if (token.length() > 0) {
@@ -51,6 +63,7 @@ public class Parser {
                     }
                     token.append(c);
                     inString = true;
+                    quote = c;
                 }
                 continue;
             }
@@ -61,8 +74,9 @@ public class Parser {
                 continue;
             }
 
-            // Handle parentheses
-            if (c == '(' || c == ')' || c == ',' || c == '[' || c == ']') {
+            // Handle other tokens
+            List<Character> specialChars = List.of('(', ')', ',', '[', ']', ':', '{', '}');
+            if (specialChars.contains(c)) {
                 if (token.length() > 0) {
                     tokens.add(token.toString());
                     token.setLength(0);
@@ -81,6 +95,10 @@ public class Parser {
         // Add any remaining token at the end
         if (token.length() > 0) {
             tokens.add(token.toString());
+        }
+
+        if (inString) {
+            throw new RuntimeException("Unterminated string literal; expected closing " + quote);
         }
 
         return tokens;
@@ -103,7 +121,7 @@ public class Parser {
         while (!tokens.isEmpty()) {
             if (tokens.peek().equals(")")) {
                 if (trailingComma) {
-                    throw new Exception("Trailing comma in function call");
+                    throw new Exception(TRAILING_COMMA_IN_FUNCTION);
                 }
                 break;
             }
@@ -122,7 +140,7 @@ public class Parser {
         }
 
         if (trailingComma) {
-            throw new Exception("Trailing comma in function call");
+            throw new Exception(TRAILING_COMMA_IN_FUNCTION);
         }
 
         return new FunctionCall(name, parameters);
@@ -141,7 +159,7 @@ public class Parser {
             while (!tokens.isEmpty()) {
                 if (tokens.peek().equals("]")) {
                     if (trailingComma) {
-                        throw new Exception("Trailing comma in list");
+                        throw new Exception(TRAILING_COMMA_IN_LIST);
                     }
                     tokens.poll();
                     return new Literal(list);
@@ -154,10 +172,47 @@ public class Parser {
                 }
             }
             if (trailingComma) {
-                throw new Exception("Trailing comma in list");
+                throw new Exception(TRAILING_COMMA_IN_LIST);
             }
             return new Literal(list);
-        } else if (token.startsWith("\"") && token.endsWith("\"") && token.length() > 1) {
+        } else if (token.equals("{")) {
+            // parse dict
+            Map<String, Object> dict = new HashMap<>();
+            boolean trailingComma = false;
+            while (!tokens.isEmpty()) {
+                if (tokens.peek().equals("}")) {
+                    if (trailingComma) {
+                        throw new Exception(TRAILING_COMMA_IN_DICT);
+                    }
+                    tokens.poll();
+                    return new Literal(dict);
+                }
+                Object key = parseStatement(tokens);
+                if (!(key instanceof Literal)) {
+                    throw new Exception("Expected literal as key in dict, but got " + key);
+                }
+                Object keyValue = ((Literal) key).getValue();
+                if (!(keyValue instanceof String)) {
+                    throw new Exception("Expected string as key in dict, but got " + keyValue);
+                }
+                String keyString = (String) keyValue;
+                String colon = tokens.poll();
+                if (colon == null || !colon.equals(":")) {
+                    throw new Exception("Expected ':', but got " + (colon == null ? "nothing" : "'" + colon + "'"));
+                }
+                Object value = parseStatement(tokens);
+                dict.put(keyString, value);
+                trailingComma = false;
+                if (tokens.peek().equals(",")) {
+                    tokens.poll(); // consume ','
+                    trailingComma = true;
+                }
+            }
+            return null;
+        } else if (
+            ((token.startsWith("\"") && token.endsWith("\"")) || (token.startsWith("'") && token.endsWith("'")))
+            && token.length() > 1
+        ) {
             // parse string
             String stringValue = token.substring(1, token.length() - 1);
             return new Literal(stringValue);
@@ -171,7 +226,7 @@ public class Parser {
                 while (!tokens.isEmpty()) {
                     if (tokens.peek().equals(")")) {
                         if (trailingComma) {
-                            throw new Exception("Trailing comma in function call");
+                            throw new Exception(TRAILING_COMMA_IN_FUNCTION);
                         }
                         tokens.poll();
                         return new FunctionCall(token, arguments);
@@ -184,7 +239,7 @@ public class Parser {
                     }
                 }
                 if (trailingComma) {
-                    throw new Exception("Trailing comma in function call");
+                    throw new Exception(TRAILING_COMMA_IN_FUNCTION);
                 }
                 return new FunctionCall(token, arguments);
             } else {
@@ -200,7 +255,7 @@ public class Parser {
                         return new Literal(Integer.parseInt(token)); // Integer
                     }
                 } catch (NumberFormatException e) {
-                    // if it's not a number, treat it as a variable
+                    // it's a variable
                     return new Variable(token);
                 }
             }

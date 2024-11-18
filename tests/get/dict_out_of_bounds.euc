@@ -1,0 +1,2 @@
+def(x, {'test': 1})
+get(x, 'test2')

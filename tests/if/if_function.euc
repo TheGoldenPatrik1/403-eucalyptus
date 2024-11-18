@@ -1,4 +1,5 @@
 def(x,1)
 
+if(eq(x,1), print("Printed if"))
 if(eq(x,1), print("Printed if"), print("Printed else"))
 if(eq(x,2), print("Printed if"), print("Printed else"))

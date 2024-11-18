@@ -1,0 +1,5 @@
+defFunction(x, n, [
+    print(n),
+    return(n)
+])
+or(eq(x(1), x(1)), eq(x(1), x(2)))

@@ -54,6 +54,8 @@ public class Interpreter {
         switch (name) {
             case "add":
                 return visitAdd(function);
+            case "and":
+                return visitAnd(function);
             case "def":
                 return visitDef(function);
             case "defFunction":
@@ -62,16 +64,22 @@ public class Interpreter {
                 return visitEqFunction(function);
             case "forEach":
                 return visitForEach(function);
+            case "get":
+                return visitGet(function);
             case "if":
                 return visitIf(function);
             case "lt":
-                return visitLess(function);
+                return visitLessThan(function);
             case "mult":
                 return visitMult(function);
+            case "or":
+                return visitOr(function);
             case "print":
                 return visitPrint(function);
             case "return":
                 return visitReturn(function);
+            case "sub":
+                return visitSub(function);
             default:
                 return visitUserFunction(function);
         }
@@ -116,6 +124,8 @@ public class Interpreter {
 
         Object result = acceptStatement(arguments.get(0));
 
+        // add support for list + item
+        // add support for dict + item
         for (int i = 1; i < arguments.size(); i++) {
             Object next = acceptStatement(arguments.get(i));
 
@@ -130,13 +140,30 @@ public class Interpreter {
                 newResult.addAll((List<Object>) next);
                 result = newResult;
             } else {
-                String resultName = result.getClass().getSimpleName().replace("ArrayList", "List");
-                String nextName = next.getClass().getSimpleName().replace("ArrayList", "List");
+                String resultName = getLiteralName(result);
+                String nextName = getLiteralName(next);
                 throw new RuntimeException("Cannot add " + resultName + " and " + nextName);
             }
         }
 
         return result;
+    }
+
+    private Object visitAnd(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() < 2) {
+            throw new RuntimeException("'and' function expects at least 2 arguments, got " + arguments.size());
+        }
+
+        for (Object argument : arguments) {
+            Object value = acceptStatement(argument);
+            if (!Boolean.TRUE.equals(value)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private Object visitDef(FunctionCall function) {
@@ -203,7 +230,6 @@ public class Interpreter {
     }
 
     private Object visitEqFunction(FunctionCall function) {
-
         List<Object> arguments = function.getArguments();
 
         if (arguments.size() != 2) {
@@ -273,36 +299,90 @@ public class Interpreter {
         return null;
     }
 
+    @SuppressWarnings("unchecked")
+    private Object visitGet(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+        if (arguments.size() != 2) {
+            throw new RuntimeException("'get' function expects 2 arguments, got " + arguments.size());
+        }
+        if (!(arguments.get(0) instanceof Variable)) {
+            throw new RuntimeException("First argument of 'get' function must be a variable");
+        }
+
+        String variableName = ((Variable) arguments.get(0)).getName();
+        Object value = env.getVariable(variableName);
+        if (value == null) {
+            throw new RuntimeException("Variable '" + variableName + "' is not defined");
+        }
+        if (value instanceof Map) {
+            Object key = acceptStatement(arguments.get(1));
+            if (!(key instanceof String)) {
+                throw new RuntimeException("Second argument of 'get' function must be a string");
+            }
+            Map<String, Object> dict = (Map<String, Object>) value;
+            if (!dict.containsKey(key)) {
+                throw new RuntimeException("Key '" + key + "' not found in dict " + variableName);
+            }
+            return dict.get(key);
+        } else if (value instanceof List) {
+            Object index = acceptStatement(arguments.get(1));
+            if (!(index instanceof Integer)) {
+                throw new RuntimeException("Second argument of 'get' function must be an integer");
+            }
+
+            List<Object> list = (List<Object>) value;
+            int i = (int) index;
+            if (i < 0 || i >= list.size()) {
+                throw new RuntimeException("Index out of bounds: " + i + " for list " + variableName);
+            }
+            return list.get(i);
+        } else {
+            throw new RuntimeException("Variable '" + variableName + "' is not a dict or list");
+        }
+    }
+
     private Object visitIf(FunctionCall function) {
         List<Object> arguments = function.getArguments();
 
-        if (arguments.size() != 3) {
-            throw new RuntimeException("'if' function expects exactly 3 arguments, got " + arguments.size());
+        if (arguments.size() < 2 && arguments.size() > 3) {
+            throw new RuntimeException("'if' function expects either 2 or 3 arguments, got " + arguments.size());
         }
 
         Object conditional = acceptStatement(arguments.get(0));
 
-        if ((Boolean) conditional) {
+        if (Boolean.TRUE.equals(conditional)) {
             return acceptStatement(arguments.get(1));
+        } else if (arguments.size() == 3) {
+            return acceptStatement(arguments.get(2));
         }
-        return acceptStatement(arguments.get(2));
+        return null;
     }
 
-    private Object visitLess(FunctionCall function) {
+    @SuppressWarnings("unchecked")
+    private Object visitLessThan(FunctionCall function) {
         List<Object> arguments = function.getArguments();
 
         if (arguments.size() != 2) {
-            throw new RuntimeException("'eq' function expects exactly 2 arguments, got " + arguments.size());
+            throw new RuntimeException("'lt' function expects exactly 2 arguments, got " + arguments.size());
         }
 
         Object first = acceptStatement(arguments.get(0));
         Object second = acceptStatement(arguments.get(1));
 
-        return first.toString().compareTo(second.toString()) < 0;
+        if (first instanceof Number && second instanceof Number) {
+            return ((Number) first).doubleValue() < ((Number) second).doubleValue();
+        } else if (first instanceof String && second instanceof String) {
+            return first.toString().compareTo(second.toString()) < 0;
+        } else if (first instanceof List && second instanceof List) {
+            return ((List<Object>) first).size() < ((List<Object>) second).size();
+        } else {
+            String firstName = getLiteralName(first);
+            String secondName = getLiteralName(second);
+            throw new RuntimeException("Cannot compare " + firstName + " and " + secondName);
+        }
     }
 
     private Object visitMult(FunctionCall function) {
-
         List<Object> arguments = function.getArguments();
 
         if (arguments.size() < 2) {
@@ -319,13 +399,30 @@ public class Interpreter {
             } else if (result instanceof Number && next instanceof Number) {
                 result = ((Number) result).doubleValue() * ((Number) next).doubleValue();
             } else {
-                String resultName = result.getClass().getSimpleName().replace("ArrayList", "List");
-                String nextName = next.getClass().getSimpleName().replace("ArrayList", "List");
+                String resultName = getLiteralName(result);
+                String nextName = getLiteralName(next);
                 throw new RuntimeException("Cannot multiply " + resultName + " and " + nextName);
             }
         }
 
         return result;
+    }
+
+    private Object visitOr(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() < 2) {
+            throw new RuntimeException("'or' function expects at least 2 arguments, got " + arguments.size());
+        }
+
+        for (Object argument : arguments) {
+            Object value = acceptStatement(argument);
+            if (Boolean.TRUE.equals(value)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private Object visitPrint(FunctionCall function) {
@@ -348,6 +445,41 @@ public class Interpreter {
             throw new RuntimeException("'return' function expects 1 argument, got " + arguments.size());
         }
         return acceptStatement(arguments.get(0));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Object visitSub(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() < 2) {
+            throw new RuntimeException("'sub' function expects at least 2 arguments, got " + arguments.size());
+        }
+
+        Object result = acceptStatement(arguments.get(0));
+
+        // add support for list - item
+        // add support for dict - item
+        for (int i = 1; i < arguments.size(); i++) {
+            Object next = acceptStatement(arguments.get(i));
+
+            if (result instanceof Integer && next instanceof Integer) {
+                result = (int) result - (int) next;
+            } else if (result instanceof Number && next instanceof Number) {
+                result = ((Number) result).doubleValue() - ((Number) next).doubleValue();
+            } else if (result instanceof String && next instanceof String) {
+                result = ((String) result).replace((String) next, "");
+            } else if (result instanceof List && next instanceof List) {
+                List<Object> newResult = new ArrayList<>((List<Object>) result);
+                newResult.removeAll((List<Object>) next);
+                result = newResult;
+            } else {
+                String resultName = getLiteralName(result);
+                String nextName = getLiteralName(next);
+                throw new RuntimeException("Cannot add " + resultName + " and " + nextName);
+            }
+        }
+
+        return result;
     }
 
     private Object visitUserFunction(FunctionCall function) {
@@ -421,5 +553,9 @@ public class Interpreter {
     private static boolean isSnakeCase(String input) {
         String snakeCasePattern = "^[a-z][a-z0-9]*(_[a-z][a-z0-9]*)*$";
         return Pattern.matches(snakeCasePattern, input);
+    }
+
+    private static String getLiteralName(Object literal) {
+        return literal.getClass().getSimpleName().replace("ArrayList", "List").replace("HashMap", "Dict");
     }
 }
