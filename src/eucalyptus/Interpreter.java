@@ -68,6 +68,8 @@ public class Interpreter {
                 return visitGet(function);
             case "if":
                 return visitIf(function);
+            case "len":
+                return visitLen(function);
             case "lt":
                 return visitLessThan(function);
             case "mult":
@@ -184,15 +186,15 @@ public class Interpreter {
             throw new RuntimeException("'def' function expects 2 or 3 arguments, got " + arguments.size());
         }
         if (!(arguments.get(0) instanceof Variable)) {
-            throw new RuntimeException("First argument of 'def' function must be a variable");
+            throw new RuntimeException("First argument of 'def' function must be a Variable");
         }
 
         String variableName = ((Variable) arguments.get(0)).getName();
         if (reservedFunctions.contains(variableName)) {
-            throw new RuntimeException("Cannot define variable with reserved name '" + variableName + "'");
+            throw new RuntimeException("Cannot define Variable with reserved name '" + variableName + "'");
         }
         if (isScreamingSnakeCase(variableName) && env.hasVariable(variableName)) {
-            throw new RuntimeException("Cannot reassign constant variable '" + variableName + "'");
+            throw new RuntimeException("Cannot reassign constant Variable '" + variableName + "'");
         }
         if (!isScreamingSnakeCase(variableName) && !isSnakeCase(variableName)) {
             throw new RuntimeException(
@@ -212,12 +214,12 @@ public class Interpreter {
             throw new RuntimeException("'defFunction' function expects 3 arguments, got " + arguments.size());
         }
         if (!(arguments.get(0) instanceof Variable)) {
-            throw new RuntimeException("First argument of 'defFunction' function must be a variable");
+            throw new RuntimeException("First argument of 'defFunction' function must be a Variable");
         }
 
         String functionName = ((Variable) arguments.get(0)).getName();
         if (reservedFunctions.contains(functionName)) {
-            throw new RuntimeException("Cannot define function with reserved name '" + functionName + "'");
+            throw new RuntimeException("Cannot define Function with reserved name '" + functionName + "'");
         }
         if (!isCamelCase(functionName)) {
             throw new RuntimeException("Function name must be in camelCase");
@@ -230,7 +232,7 @@ public class Interpreter {
             parameters = List.of((Variable) arguments.get(1));
         } else {
             throw new RuntimeException(
-                    "Second argument of 'defFunction' function must be a variable or list of variables");
+                    "Second argument of 'defFunction' function must be a Variable or List of Variables");
         }
 
         List<FunctionCall> statements = extractFunctionCalls(arguments.get(2), "Third", "defFunction");
@@ -251,6 +253,10 @@ public class Interpreter {
         Object first = acceptStatement(arguments.get(0));
         Object second = acceptStatement(arguments.get(1));
 
+        if (first == null) {
+            return second == null;
+        }
+
         return first.equals(second);
     }
 
@@ -261,10 +267,10 @@ public class Interpreter {
             throw new RuntimeException("'forEach' function expects 3 arguments, got " + arguments.size());
         }
         if (!(arguments.get(0) instanceof Variable)) {
-            throw new RuntimeException("First argument of 'forEach' function must be a variable");
+            throw new RuntimeException("First argument of 'forEach' function must be a Variable");
         }
 
-        final String LIST_ERROR_MESSAGE = "Second argument of 'forEach' function must be a list";
+        final String LIST_ERROR_MESSAGE = "Second argument of 'forEach' function must be a List";
         Object value = null;
         if (arguments.get(1) instanceof Literal) {
             Literal listLiteral = (Literal) arguments.get(1);
@@ -289,7 +295,7 @@ public class Interpreter {
 
         String variableName = ((Variable) arguments.get(0)).getName();
         if (reservedFunctions.contains(variableName)) {
-            throw new RuntimeException("Cannot define variable with reserved name '" + variableName + "'");
+            throw new RuntimeException("Cannot define Variable with reserved name '" + variableName + "'");
         }
         if (!isSnakeCase(variableName)) {
             throw new RuntimeException("Variable name must be in snake_case");
@@ -318,7 +324,7 @@ public class Interpreter {
             throw new RuntimeException("'get' function expects 2 arguments, got " + arguments.size());
         }
         if (!(arguments.get(0) instanceof Variable)) {
-            throw new RuntimeException("First argument of 'get' function must be a variable");
+            throw new RuntimeException("First argument of 'get' function must be a Variable");
         }
 
         String variableName = ((Variable) arguments.get(0)).getName();
@@ -329,27 +335,27 @@ public class Interpreter {
         if (value instanceof Map) {
             Object key = acceptStatement(arguments.get(1));
             if (!(key instanceof String)) {
-                throw new RuntimeException("Second argument of 'get' function must be a string");
+                throw new RuntimeException("Second argument of 'get' function must be a String");
             }
             Map<String, Object> dict = (Map<String, Object>) value;
             if (!dict.containsKey(key)) {
-                throw new RuntimeException("Key '" + key + "' not found in dict " + variableName);
+                throw new RuntimeException("Key '" + key + "' not found in Dict " + variableName);
             }
             return dict.get(key);
         } else if (value instanceof List) {
             Object index = acceptStatement(arguments.get(1));
             if (!(index instanceof Integer)) {
-                throw new RuntimeException("Second argument of 'get' function must be an integer");
+                throw new RuntimeException("Second argument of 'get' function must be an Integer");
             }
 
             List<Object> list = (List<Object>) value;
             int i = (int) index;
             if (i < 0 || i >= list.size()) {
-                throw new RuntimeException("Index out of bounds: " + i + " for list " + variableName);
+                throw new RuntimeException("Index out of bounds: " + i + " for List " + variableName);
             }
             return list.get(i);
         } else {
-            throw new RuntimeException("Variable '" + variableName + "' is not a dict or list");
+            throw new RuntimeException("Variable '" + variableName + "' is not a Dict or List");
         }
     }
 
@@ -370,7 +376,22 @@ public class Interpreter {
         return null;
     }
 
-    @SuppressWarnings("unchecked")
+    private Object visitLen(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+        if (arguments.size() != 1) {
+            throw new RuntimeException("'len' function expects 1 argument, got " + arguments.size());
+        }
+        Object value = acceptStatement(arguments.get(0));
+        if (value instanceof String) {
+            return ((String) value).length();
+        } else if (value instanceof List) {
+            return ((List<?>) value).size();
+        } else if (value instanceof Map) {
+            return ((Map<?, ?>) value).size();
+        }
+        throw new RuntimeException("'len' function expects a String, List, or Dict, got " + getLiteralName(value));
+    }
+
     private Object visitLessThan(FunctionCall function) {
         List<Object> arguments = function.getArguments();
 
@@ -386,7 +407,7 @@ public class Interpreter {
         } else if (first instanceof String && second instanceof String) {
             return first.toString().compareTo(second.toString()) < 0;
         } else if (first instanceof List && second instanceof List) {
-            return ((List<Object>) first).size() < ((List<Object>) second).size();
+            return ((List<?>) first).size() < ((List<?>) second).size();
         } else {
             String firstName = getLiteralName(first);
             String secondName = getLiteralName(second);
@@ -485,13 +506,13 @@ public class Interpreter {
             } else if (result instanceof List) {
                 List<Object> newResult = new ArrayList<>((List<Object>) result);
                 if (!newResult.remove(next)) {
-                    throw new RuntimeException("Item '" + next + "' not found in list " + result);
+                    throw new RuntimeException("Item '" + next + "' not found in List " + result);
                 }
                 result = newResult;
             } else if (result instanceof Map && next instanceof String) {
                 Map<String, Object> newResult = new HashMap<>((Map<String, Object>) result);
                 if (newResult.remove(next) == null) {
-                    throw new RuntimeException("Key '" + next + "' not found in dict " + result);
+                    throw new RuntimeException("Key '" + next + "' not found in Dict " + result);
                 }
                 result = newResult;
             } else {
@@ -510,7 +531,7 @@ public class Interpreter {
         if (functionValue == null) {
             throw new RuntimeException("Function '" + name + "' is not defined");
         } else if (!(functionValue instanceof Function)) {
-            throw new RuntimeException("Cannot call variable '" + name + "' as it is not a function");
+            throw new RuntimeException("Cannot call Variable '" + name + "' as it is not a Function");
         }
         Function userFunction = (Function) functionValue;
 
@@ -551,7 +572,7 @@ public class Interpreter {
     private List<FunctionCall> extractFunctionCalls(Object arg, String argNumber, String functionName) {
         List<FunctionCall> functionCalls;
         final String ERROR_MESSAGE = argNumber + " argument of '" + functionName
-                + "' function must be a list of function calls";
+                + "' function must be a List of Function calls";
         if (arg instanceof Literal && ((Literal) arg).isList()) {
             functionCalls = (List<FunctionCall>) ((Literal) arg).getValue();
         } else if (arg instanceof FunctionCall) {
@@ -578,6 +599,9 @@ public class Interpreter {
     }
 
     private static String getLiteralName(Object literal) {
+        if (literal == null) {
+            return "null";
+        }
         return literal.getClass().getSimpleName().replace("ArrayList", "List").replace("HashMap", "Dict");
     }
 

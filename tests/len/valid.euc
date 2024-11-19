@@ -1,0 +1,6 @@
+print(len([]))
+print(len(''))
+print(len({}))
+print(len([1, 2]))
+print(len('ab'))
+print(len({'test': 1, 'test2': 2}))

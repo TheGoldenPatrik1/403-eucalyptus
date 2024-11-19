@@ -247,6 +247,10 @@ public class Parser {
                     // boolean literal
                     return new Literal(Boolean.parseBoolean(token));
                 }
+                if (token.equals("null")) {
+                    // null literal
+                    return new Literal(null);
+                }
                 // attempt to parse number
                 try {
                     if (token.contains(".")) {

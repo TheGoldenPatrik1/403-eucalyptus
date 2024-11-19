@@ -144,6 +144,8 @@ Next is the definition of lists, which are comma-separated linear groupings of i
 
 Surprisingly, there's no grammatical difference between the argument list for a function and the list items in a true list. In fact, lists could really just be a global-defined-function. For instance, Eucalyptus could just as well have `defList(x, 1, 2, 3)` instead of `def(x, [1, 2, 3])`. Although this is possible and would simplify the grammar, it would be very clunky. Moreover, it would be inconsistent with Eucalyptus's design principle that everything can be boiled down to either data (numbers, strings, lists, etc.) or operations upon data (function calls).
 
+This, however, is not the case for accessing items in lists and dicts. Rather than adding to the grammar's complexity by adding an access operator (e.g., `x[0]`), Eucalyptus uses a `get()` function to retrieve a specific index or key from a given list or dict.
+
 Regardless, the final definition for a list is a simple one:
 
 ```

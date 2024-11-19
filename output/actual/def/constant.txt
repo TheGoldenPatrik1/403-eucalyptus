@@ -1,2 +1,2 @@
 0
-Error on line 4: Cannot reassign constant variable 'CONSTANT_VARIABLE'
+Error on line 4: Cannot reassign constant Variable 'CONSTANT_VARIABLE'
