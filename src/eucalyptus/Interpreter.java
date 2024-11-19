@@ -124,8 +124,6 @@ public class Interpreter {
 
         Object result = acceptStatement(arguments.get(0));
 
-        // add support for list + item
-        // add support for dict + item
         for (int i = 1; i < arguments.size(); i++) {
             Object next = acceptStatement(arguments.get(i));
 
@@ -138,6 +136,18 @@ public class Interpreter {
             } else if (result instanceof List && next instanceof List) {
                 List<Object> newResult = new ArrayList<>((List<Object>) result);
                 newResult.addAll((List<Object>) next);
+                result = newResult;
+            } else if (result instanceof List) {
+                List<Object> newResult = new ArrayList<>((List<Object>) result);
+                newResult.add(next);
+                result = newResult;
+            } else if (result instanceof Map && next instanceof Map) {
+                Map<String, Object> newResult = new HashMap<>((Map<String, Object>) result);
+                newResult.putAll((Map<String, Object>) next);
+                result = newResult;
+            } else if (result instanceof Map && next instanceof String && i + 1 < arguments.size()) {
+                Map<String, Object> newResult = new HashMap<>((Map<String, Object>) result);
+                newResult.put((String) next, acceptStatement(arguments.get(++i)));
                 result = newResult;
             } else {
                 String resultName = getLiteralName(result);
@@ -158,7 +168,7 @@ public class Interpreter {
 
         for (Object argument : arguments) {
             Object value = acceptStatement(argument);
-            if (!Boolean.TRUE.equals(value)) {
+            if (!isTruthy(value)) {
                 return false;
             }
         }
@@ -168,8 +178,10 @@ public class Interpreter {
 
     private Object visitDef(FunctionCall function) {
         List<Object> arguments = function.getArguments();
-        if (arguments.size() != 2) {
-            throw new RuntimeException("'def' function expects 2 arguments, got " + arguments.size());
+        if (arguments.size() == 3) {
+            return visitDefFunction(function);
+        } else if (arguments.size() != 2) {
+            throw new RuntimeException("'def' function expects 2 or 3 arguments, got " + arguments.size());
         }
         if (!(arguments.get(0) instanceof Variable)) {
             throw new RuntimeException("First argument of 'def' function must be a variable");
@@ -350,7 +362,7 @@ public class Interpreter {
 
         Object conditional = acceptStatement(arguments.get(0));
 
-        if (Boolean.TRUE.equals(conditional)) {
+        if (isTruthy(conditional)) {
             return acceptStatement(arguments.get(1));
         } else if (arguments.size() == 3) {
             return acceptStatement(arguments.get(2));
@@ -417,7 +429,7 @@ public class Interpreter {
 
         for (Object argument : arguments) {
             Object value = acceptStatement(argument);
-            if (Boolean.TRUE.equals(value)) {
+            if (isTruthy(value)) {
                 return true;
             }
         }
@@ -457,8 +469,6 @@ public class Interpreter {
 
         Object result = acceptStatement(arguments.get(0));
 
-        // add support for list - item
-        // add support for dict - item
         for (int i = 1; i < arguments.size(); i++) {
             Object next = acceptStatement(arguments.get(i));
 
@@ -471,6 +481,18 @@ public class Interpreter {
             } else if (result instanceof List && next instanceof List) {
                 List<Object> newResult = new ArrayList<>((List<Object>) result);
                 newResult.removeAll((List<Object>) next);
+                result = newResult;
+            } else if (result instanceof List) {
+                List<Object> newResult = new ArrayList<>((List<Object>) result);
+                if (!newResult.remove(next)) {
+                    throw new RuntimeException("Item '" + next + "' not found in list " + result);
+                }
+                result = newResult;
+            } else if (result instanceof Map && next instanceof String) {
+                Map<String, Object> newResult = new HashMap<>((Map<String, Object>) result);
+                if (newResult.remove(next) == null) {
+                    throw new RuntimeException("Key '" + next + "' not found in dict " + result);
+                }
                 result = newResult;
             } else {
                 String resultName = getLiteralName(result);
@@ -557,5 +579,20 @@ public class Interpreter {
 
     private static String getLiteralName(Object literal) {
         return literal.getClass().getSimpleName().replace("ArrayList", "List").replace("HashMap", "Dict");
+    }
+
+    private static boolean isTruthy(Object value) {
+        if (value instanceof Boolean) {
+            return (Boolean) value;
+        } else if (value instanceof Number) {
+            return ((Number) value).doubleValue() != 0;
+        } else if (value instanceof String) {
+            return !((String) value).isEmpty();
+        } else if (value instanceof List) {
+            return !((List<?>) value).isEmpty();
+        } else if (value instanceof Map) {
+            return !((Map<?, ?>) value).isEmpty();
+        }
+        return false;
     }
 }

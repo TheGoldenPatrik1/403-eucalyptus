@@ -1,0 +1,8 @@
+non-empty string is truthy
+non-empty string is not truthy
+1 is truthy
+0 is not truthy
+non-empty list is truthy
+empty list is not truthy
+non-empty dict is truthy
+empty dict is not truthy

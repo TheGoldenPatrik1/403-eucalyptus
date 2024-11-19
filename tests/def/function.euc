@@ -1,0 +1,2 @@
+def(newFunc, x, print(x))
+newFunc(1)

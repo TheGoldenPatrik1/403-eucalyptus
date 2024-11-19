@@ -1,0 +1,2 @@
+{}
+Error on line 3: Cannot add Dict and Integer

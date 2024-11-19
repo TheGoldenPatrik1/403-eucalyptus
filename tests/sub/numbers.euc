@@ -1,0 +1,4 @@
+print(sub(1, 0))
+print(sub(0, 1))
+print(sub(25, 10, 5))
+print(sub(3.4, 0.7))

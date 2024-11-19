@@ -1,0 +1,3 @@
+print(sub("test", "t"))
+print(sub("test", "e"))
+print(sub("test", ""))
