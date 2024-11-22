@@ -1,7 +1,6 @@
 package eucalyptus;
 
 import java.nio.file.Files;
-import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
@@ -388,11 +387,16 @@ public class Interpreter {
             throw new RuntimeException("'inc' function expects exactly 2 arguments, got " + arguments.size());
         }
 
-        Object var = acceptStatement(arguments.get(0));
+        if (!(arguments.get(0) instanceof Variable)) {
+            throw new RuntimeException("First argument of 'inc' function must be a Variable");
+        }
 
-        env.setVariable(var.toString(), (int) var + (int) acceptStatement(arguments.get(1)));
+        String variableName = ((Variable) arguments.get(0)).getName();
 
-        return env.getVariable(var.toString());
+        env.setVariable(variableName,
+                (int) acceptStatement(arguments.get(0)) + (int) acceptStatement(arguments.get(1)));
+
+        return null;
     }
 
     private Object visitLen(FunctionCall function) {
@@ -552,20 +556,20 @@ public class Interpreter {
         }
 
         Object cond = arguments.get(0);
-        System.out.println(cond);
         List<FunctionCall> statements = extractFunctionCalls(arguments.get(1), "Second", "while");
 
-        Object result = "";
+        env.enterScope();
         while ((boolean) acceptStatement(cond)) {
-            System.out.println(cond);
             for (FunctionCall statement : statements) {
                 Object stat = acceptFunction(statement);
-                if (stat != null)
-                    result += stat.toString();
+                if (stat != null) {
+                    env.exitScope();
+                    return stat;
+                }
             }
         }
-
-        return result;
+        env.exitScope();
+        return null;
     }
 
     private Object visitUserFunction(FunctionCall function) {

@@ -1,0 +1,3 @@
+def(x,1)
+
+while(lt(x,4), [print(x), inc(x, 1)])
