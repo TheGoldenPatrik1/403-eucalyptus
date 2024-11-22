@@ -1,0 +1,1 @@
+print(inc(x,1))

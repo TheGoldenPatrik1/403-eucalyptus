@@ -1,6 +1,7 @@
 package eucalyptus;
 
 import java.nio.file.Files;
+import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.io.IOException;
@@ -68,6 +69,8 @@ public class Interpreter {
                 return visitGet(function);
             case "if":
                 return visitIf(function);
+            case "inc":
+                return visitInc(function);
             case "len":
                 return visitLen(function);
             case "lt":
@@ -82,6 +85,8 @@ public class Interpreter {
                 return visitReturn(function);
             case "sub":
                 return visitSub(function);
+            case "while":
+                return visitWhile(function);
             default:
                 return visitUserFunction(function);
         }
@@ -376,6 +381,20 @@ public class Interpreter {
         return null;
     }
 
+    private Object visitInc(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() != 2) {
+            throw new RuntimeException("'inc' function expects exactly 2 arguments, got " + arguments.size());
+        }
+
+        Object var = acceptStatement(arguments.get(0));
+
+        env.setVariable(var.toString(), (int) var + (int) acceptStatement(arguments.get(1)));
+
+        return env.getVariable(var.toString());
+    }
+
     private Object visitLen(FunctionCall function) {
         List<Object> arguments = function.getArguments();
         if (arguments.size() != 1) {
@@ -525,6 +544,30 @@ public class Interpreter {
         return result;
     }
 
+    private Object visitWhile(FunctionCall function) {
+        List<Object> arguments = function.getArguments();
+
+        if (arguments.size() != 2) {
+            throw new RuntimeException("'while' function expects exactly 2 arguments, got " + arguments.size());
+        }
+
+        Object cond = arguments.get(0);
+        System.out.println(cond);
+        List<FunctionCall> statements = extractFunctionCalls(arguments.get(1), "Second", "while");
+
+        Object result = "";
+        while ((boolean) acceptStatement(cond)) {
+            System.out.println(cond);
+            for (FunctionCall statement : statements) {
+                Object stat = acceptFunction(statement);
+                if (stat != null)
+                    result += stat.toString();
+            }
+        }
+
+        return result;
+    }
+
     private Object visitUserFunction(FunctionCall function) {
         String name = function.getName();
         Object functionValue = env.getVariable(name);
@@ -618,5 +661,9 @@ public class Interpreter {
             return !((Map<?, ?>) value).isEmpty();
         }
         return false;
+    }
+
+    public void closeDebugger() {
+        env.closeDebugger();
     }
 }

@@ -41,7 +41,7 @@ TODO: Add a list of global functions with what they do and how to use them.
 | gteq        | Returns true if first parameter is greater than or equal to the second parameter.                                                                         | No          |
 | has         | Returns true if the first parameter list or dict contains the second parameter value.                                                                     | No          |
 | if          | If the first parameter is true, executes second parameter's list of statements. Else, executes third parameter's list of statements.                      | Yes         |
-| inc         | Increments first parameter by second parameter.                                                                                                           | No          |
+| inc         | Increments first parameter by second parameter.                                                                                                           | Yes         |
 | index       | Returns the index of a value within a list or the key within a dict. Returns -1 if value is not found. First parameter is list/dict. Second is the value. | No          |
 | len         | Returns the length of the given list or dict.                                                                                                             | Yes         |
 | lt          | Returns true if the first parameter is less than the second. parameter                                                                                    | Yes         |
@@ -69,6 +69,71 @@ The classic hello world problem is very simple in Eucalyptus. It's simply a sing
 
 ```
 print("Hello, World!")
+```
+
+The following program demonstrates how to do basic variable assignment and arithmetic.
+
+```
+def(x, 10)
+def(y, 20)
+def(sum, add(x, y))
+print(sum)
+```
+
+Output:
+
+```
+30
+```
+
+For a slightly more complicated program, you can implement conditionals:
+
+```
+def(x, 15)
+
+if(lt(x, 20),
+    print("x is less than twenty"),
+    print("x is greater than twenty"))
+```
+
+Output:
+
+```
+x is less than twenty
+```
+
+Defining functions in Eucalyptus is as easy as variables:
+
+```
+def(greet, name,
+    print(add("Hello ", name)))
+
+greet("Eucalyptus")
+```
+
+Output:
+
+```
+Hello Eucalyptus
+```
+
+Eucalyptus can handle lists easily with loops:
+
+```
+def(numbers, [1,2,3,4,5])
+
+forEach(num, numbers,
+    print(num))
+```
+
+Output:
+
+```
+1
+2
+3
+4
+5
 ```
 
 TODO: Add more example programs with explanation.

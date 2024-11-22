@@ -52,6 +52,7 @@ public class Eucalyptus {
             List<FunctionCall> functions = parser.parse();
             Interpreter interpreter = new Interpreter(functions);
             interpreter.interpret();
+            interpreter.closeDebugger();
         } catch (Exception e) {
             System.out.println(e.getMessage());
         }

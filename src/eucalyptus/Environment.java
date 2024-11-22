@@ -4,13 +4,22 @@ import java.util.Deque;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 
 public class Environment {
     private Deque<Map<String, Object>> scopes;
+    private PrintWriter debug;
 
     public Environment() {
         scopes = new LinkedList<>();
         scopes.push(new HashMap<>());
+        try {
+            debug = new PrintWriter("/Users/sawyerkent/Documents/CompSci/CS503/403-eucalyptus/src/Debugger.txt");
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 
     // Enter a new scope
@@ -29,6 +38,13 @@ public class Environment {
 
     // Define or update a variable in the current scope
     public void setVariable(String name, Object value) {
+        if (!hasVariable(name)) {
+            String text = "Created " + name + " with value " + value;
+            debug.println(text);
+        } else {
+            String text = "Changed " + name + " to the value " + value;
+            debug.println(text);
+        }
         scopes.peek().put(name, value);
     }
 
@@ -50,5 +66,9 @@ public class Environment {
             }
         }
         return false;
+    }
+
+    public void closeDebugger() {
+        debug.close();
     }
 }
