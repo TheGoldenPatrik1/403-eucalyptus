@@ -1,0 +1,2 @@
+Created getDogYears with value getDogYears([age]) {[return([mult([age, 7])])]}
+Created dog with value {getDogYears=return([getDogYears([age])]), age=3, breed=mutt}

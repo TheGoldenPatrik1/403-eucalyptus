@@ -1,6 +1,8 @@
-def(x,1)
-while(lt(x,3), [
-    def(y, x)
-    inc(x,1)
-])
-print(y)
+def(getDogYears, age, return(mult(age, 7)))
+
+def(buddy, {'age': 3, 'breed': "mutt", 'getDogYears': getDogYears(age)})
+
+print(get(dog, 'age'))
+print("Dog Years")
+print(get(dog, 'getDogYears'))
+

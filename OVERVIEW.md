@@ -20,6 +20,8 @@ Finally, we wanted a feature to help users debug their programs. We decided to c
 
 There are three major data types in Eucalyptus. The first is literals: Numbers, Strings, Booleans, Lists (a group of any of the previous literals), and Dicts (key-value pairs, where the key is a string and the value is a literal). The second data type is functions. These are callable items, both global and user-defined. Function names must all be camel case (myFunction()). The third data type is variables. Essentially, this is anything that is not a literal or function that stores a value. Mutable variables must be snake case (my_variable) and constants must be screaming snake case (MY_CONSTANT).
 
+Because Eucalyptus is a functional language, there are no classes. However, you can use dicts to have a set of variables and functions all grouped together.
+
 Users who plan properly and work slowly will find the most success when it comes to using Eucalyptus. Users should become accustomed to the global functions within Eucalyptus.
 
 TODO: Add a list of global functions with what they do and how to use them.
@@ -134,6 +136,35 @@ Output:
 3
 4
 5
+```
+
+Here's how you can use dicts to represent the idea of classes in Eucalyptus:
+
+```
+def(getDogYears, age, return(mult(age, 7)))
+
+def(buddy, {'age': 3, 'breed': "mutt", 'getDogYears': getDogYears(age)})
+```
+
+Here's how the class would look in java:
+
+```
+public class Dog {
+    // Fields
+    private String breed;
+    private int age;
+
+    // Constructor
+    public Dog() {
+        age = 3;
+        breed = "mutt";
+    }
+
+    // Method to get the person's name
+    public int getDogYears() {
+        return age * 7;
+    }
+}
 ```
 
 TODO: Add more example programs with explanation.
