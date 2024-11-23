@@ -1,0 +1,69 @@
+Compiling 9 files in src/eucalyptus...
+Running 60 tests...
+
+Test 'inc_inc' ... [32mPASSED[0m
+Test 'inc_inc_with_error' ... [32mPASSED[0m
+Test 'def_mutable' ... [32mPASSED[0m
+Test 'def_function' ... [32mPASSED[0m
+Test 'def_constant' ... [32mPASSED[0m
+Test 'def_reserved' ... [32mPASSED[0m
+Test 'def_non_variable_name' ... [32mPASSED[0m
+Test 'def_invalid_name' ... [32mPASSED[0m
+Test 'recursion_factorial' ... [32mPASSED[0m
+Test 'recursion_fib' ... [32mPASSED[0m
+Test 'eq_null' ... [32mPASSED[0m
+Test 'eq_equality' ... [32mPASSED[0m
+Test 'if_multiple_statements' ... [32mPASSED[0m
+Test 'if_truthy' ... [32mPASSED[0m
+Test 'if_if_function' ... [32mPASSED[0m
+Test 'get_dict' ... [32mPASSED[0m
+Test 'get_list' ... [32mPASSED[0m
+Test 'get_list_out_of_bounds' ... [32mPASSED[0m
+Test 'get_dict_out_of_bounds' ... [32mPASSED[0m
+Test 'return_pass_value' ... [32mPASSED[0m
+Test 'return_early_return' ... [32mPASSED[0m
+Test 'return_yield_value' ... [32mPASSED[0m
+Test 'parser_strings' ... [32mPASSED[0m
+Test 'parser_unclosed_string' ... [32mPASSED[0m
+Test 'parser_no_function' ... [32mPASSED[0m
+Test 'parser_trailing_comma_in_list' ... [32mPASSED[0m
+Test 'parser_trailing_comma_in_function' ... [32mPASSED[0m
+Test 'print_null_value' ... [32mPASSED[0m
+Test 'print_no_args' ... [32mPASSED[0m
+Test 'print_literals' ... [32mPASSED[0m
+Test 'sub_strings' ... [32mPASSED[0m
+Test 'sub_lists' ... [32mPASSED[0m
+Test 'sub_numbers' ... [32mPASSED[0m
+Test 'sub_dicts' ... [32mPASSED[0m
+Test 'and_not_enough_arguments' ... [32mPASSED[0m
+Test 'and_short_circuit' ... [32mPASSED[0m
+Test 'add_dict_and_string' ... [32mPASSED[0m
+Test 'add_compatible_types' ... [32mPASSED[0m
+Test 'for_each_predefined_list' ... [32mPASSED[0m
+Test 'for_each_empty_list' ... [32mPASSED[0m
+Test 'for_each_return' ... [32mPASSED[0m
+Test 'len_valid' ... [32mPASSED[0m
+Test 'len_invalid' ... [32mPASSED[0m
+Test 'lt_lt_string' ... [32mPASSED[0m
+Test 'lt_lt_int' ... [32mPASSED[0m
+Test 'or_not_enough_arguments' ... [32mPASSED[0m
+Test 'or_short_circuit' ... [32mPASSED[0m
+Test 'while_while' ... [32mPASSED[0m
+Test 'while_var_in_while' ... [32mPASSED[0m
+Test 'def_function_call_undefined' ... [32mPASSED[0m
+Test 'def_function_define' ... [32mPASSED[0m
+Test 'def_function_function_as_arg' ... [32mPASSED[0m
+Test 'def_function_scoping' ... [32mPASSED[0m
+Test 'def_function_nested_function' ... [32mPASSED[0m
+Test 'def_function_too_many_args' ... [32mPASSED[0m
+Test 'def_function_invalid_define' ... [32mPASSED[0m
+Test 'def_function_reserved' ... [32mPASSED[0m
+Test 'def_function_invalid_name' ... [32mPASSED[0m
+Test 'mult_incompatible_multiplication' ... [32mPASSED[0m
+Test 'mult_compatible_multiplication' ... [32mPASSED[0m
+
+Tests completed with result: [32mSUCCESS[0m
+Errors: 0
+Successes: 60
+Failures: 0
+Duration: 0.09s
