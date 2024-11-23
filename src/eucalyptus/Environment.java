@@ -15,7 +15,7 @@ public class Environment {
         scopes = new LinkedList<>();
         scopes.push(new HashMap<>());
         try {
-            debug = new PrintWriter("/Users/sawyerkent/Documents/CompSci/CS503/403-eucalyptus/src/Debugger.txt");
+            debug = new PrintWriter("../src/Debugger.txt");
         } catch (FileNotFoundException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();
