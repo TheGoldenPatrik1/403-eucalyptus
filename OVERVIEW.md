@@ -141,9 +141,7 @@ Output:
 Here's how you can use dicts to represent the idea of classes in Eucalyptus:
 
 ```
-def(getDogYears, age, return(mult(age, 7)))
-
-def(buddy, {'age': 3, 'breed': "mutt", 'getDogYears': getDogYears(age)})
+def(buddy, {'age': 3, 'breed': "mutt", 'getDogYears': mult('age', 7)})
 ```
 
 Here's how the class would look in java:
