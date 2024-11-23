@@ -24,13 +24,11 @@ Because Eucalyptus is a functional language, there are no classes. However, you 
 
 Users who plan properly and work slowly will find the most success when it comes to using Eucalyptus. Users should become accustomed to the global functions within Eucalyptus.
 
-TODO: Add a list of global functions with what they do and how to use them.
-
 | Function    | Description                                                                                                                                               | Implemented |
 | ----------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
 | add         | Returns the sum of all the parameters. Also concatenates strings. (Can be as many parameters as needed)                                                   | Yes         |
-| and         | Returns true if all parameters are true                                                                                                                   | Yes         |
-| clock       | TODO: write in description                                                                                                                                | No          |
+| and         | Returns true if all parameters are true.                                                                                                                  | Yes         |
+| clock       | Returns the amount of ms since 1970.                                                                                                                      | No          |
 | dec         | Decrements first parameter by second parameter.                                                                                                           | No          |
 | def         | Sets the name designated by the first parameter to the second parameter. Sets variables to values or defines functions with a list of statements.         | Yes         |
 | defFunction | Specific function for defining a function. First parameter is function name, second is list of parameters, third is list of statements.                   | Yes         |
@@ -165,4 +163,92 @@ public class Dog {
 }
 ```
 
-TODO: Add more example programs with explanation.
+Finally, the following program helps demonstrate the casing requirements in Eucalyptus:
+
+```
+def(PI_VARIABLE, 3.14)
+
+def(calculateArea, r, return(mult(PI_VARIABLE, pow(r, 2))))
+
+def(radius_variable, 0)
+
+print("Please enter your radius:")
+scan(radius_variable)
+
+def(area_variable, calculateArea(radius_variable))
+print(area_variable)
+```
+
+PI_VARIABLE is a constant because it is named in the screaming-snake case. calculateArea is a function as it uses camelCase. radius_variable and area_variable are mutable variables as they use snake case.
+This is how the above program would be implemented in Java:
+
+```
+import java.util.Scanner;
+
+public class AreaCalculator {
+    private static final double PI_VARIABLE = 3.14;
+
+    public static double calculateArea(double radius) {
+        return PI_VARIABLE * Math.pow(radius, 2);
+    }
+
+    public static void main(String[] args) {
+
+        double radius_variable = 0;
+        double area_variable;
+
+        Scanner scanner = new Scanner(System.in);
+
+        System.out.println("Please enter your radius:");
+        radius_variable = scanner.nextDouble();
+
+        area_variable = calculateArea(radius_variable);
+
+        System.out.println(area_variable);
+
+        scanner.close();
+    }
+}
+```
+
+## Debugger
+
+As stated previously, the debugger is intended as a log of anytime a variable or function is created and changed if it is a mutable variable. This will include line numbers and the function that it is being changed in.
+
+Below is an example program to help demonstrate the debugger:
+
+```
+def(x,1)
+def(loopByTwo, y,
+    [while(lt(y, 10), [
+        def(y, mult(y, 2))
+    ]),
+    return(y)])
+def(x, loopByTwo(x))
+```
+
+After running the program, the debugger will show the following log:
+
+```
+Created x with value 1 on line 1
+Created function loopByTwo with parameter(s) [y] and statement(s) [while([lt([y, 10]), [def([y, mult([y, 2])])]]), return([y])]
+Created y with value 1 in function loopByTwo
+Changed y to the value 2 in function loopByTwo
+Changed y to the value 4 in function loopByTwo
+Changed y to the value 8 in function loopByTwo
+Changed y to the value 16 in function loopByTwo
+Changed x to the value 16 on line 3
+```
+
+We were able to partially implement it and the debugger currently outputs this:
+
+```
+Created x with value 1
+Created loopByTwo with value loopByTwo([y]) {[while([lt([y, 10]), [def([y, mult([y, 2])])]]), return([y])]}
+Created y with value 1
+Changed y to the value 2
+Changed y to the value 4
+Changed y to the value 8
+Changed y to the value 16
+Changed x to the value 16
+```
